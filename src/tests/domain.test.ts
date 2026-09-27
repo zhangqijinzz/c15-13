@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { estimateDevice, summarizeScenario, validateDevice } from '../domain';
+import { compareScenarios, estimateDevice, estimateDailyHourSaving, summarizeScenario, validateDevice } from '../domain';
 import type { EnergyScenario } from '../types';
 
 describe('energy domain', () => {
@@ -15,6 +15,23 @@ describe('energy domain', () => {
     const summary = summarizeScenario(scenario);
     expect(summary.total.monthlyKwh).toBe(12);
     expect(summary.devices.map((device) => device.share)).toEqual([0.25, 0.75]);
+  });
+
+  it('compares plans with each plan own days and electricity price', () => {
+    const current: EnergyScenario = {
+      id: 'current', name: 'current', pricePerKwh: 1, daysPerMonth: 20, createdAt: '',
+      devices: [{ id: 'a', name: 'a', watts: 1000, dailyHours: 1 }],
+    };
+    const baseline: EnergyScenario = {
+      id: 'baseline', name: 'baseline', pricePerKwh: 0.5, daysPerMonth: 10, createdAt: '',
+      devices: [{ id: 'b', name: 'b', watts: 1000, dailyHours: 1 }],
+    };
+
+    expect(compareScenarios(current, baseline)).toEqual({ monthlyKwhDelta: 10, monthlyCostDelta: 15 });
+  });
+
+  it('calculates a daily hour saving using the scenario actual days and price', () => {
+    expect(estimateDailyHourSaving({ watts: 1000 }, { daysPerMonth: 28, pricePerKwh: 0.5 })).toBe(14);
   });
 
   it('rejects negative power and more than 24 hours', () => {

@@ -1,12 +1,14 @@
 import type { EnergyDevice, EnergyEstimate, EnergyScenario, ScenarioSummary } from './types';
 
 export const MAX_DAILY_HOURS = 24;
+export const DEFAULT_DAYS_PER_MONTH = 30;
+export const DEFAULT_PRICE_PER_KWH = 0.62;
 
 export const exampleScenario: EnergyScenario = {
   id: 'scenario-home',
   name: '夏日居家方案',
-  pricePerKwh: 0.62,
-  daysPerMonth: 30,
+  pricePerKwh: DEFAULT_PRICE_PER_KWH,
+  daysPerMonth: DEFAULT_DAYS_PER_MONTH,
   createdAt: '2026-01-01T00:00:00.000Z',
   devices: [
     { id: 'device-aircon', name: '客厅空调', watts: 1200, dailyHours: 6 },
@@ -39,6 +41,25 @@ export function summarizeScenario(scenario: EnergyScenario): ScenarioSummary {
     total,
     devices: devices.map((device) => ({ ...device, share: total.monthlyKwh ? device.monthlyKwh / total.monthlyKwh : 0 })),
   };
+}
+
+export interface ScenarioComparison {
+  monthlyKwhDelta: number;
+  monthlyCostDelta: number;
+}
+
+export function compareScenarios(current: EnergyScenario, baseline: EnergyScenario): ScenarioComparison {
+  const currentSummary = summarizeScenario(current);
+  const baselineSummary = summarizeScenario(baseline);
+
+  return {
+    monthlyKwhDelta: currentSummary.total.monthlyKwh - baselineSummary.total.monthlyKwh,
+    monthlyCostDelta: currentSummary.total.monthlyCost - baselineSummary.total.monthlyCost,
+  };
+}
+
+export function estimateDailyHourSaving(device: Pick<EnergyDevice, 'watts'>, scenario: Pick<EnergyScenario, 'daysPerMonth' | 'pricePerKwh'>): number {
+  return (device.watts / 1000) * scenario.daysPerMonth * scenario.pricePerKwh;
 }
 
 export function validateDevice(device: Pick<EnergyDevice, 'name' | 'watts' | 'dailyHours'>): string | null {
