@@ -41,6 +41,25 @@ export function summarizeScenario(scenario: EnergyScenario): ScenarioSummary {
   };
 }
 
+export interface ScenarioComparison {
+  monthlyKwhDelta: number;
+  monthlyCostDelta: number;
+}
+
+export function compareScenarios(current: EnergyScenario, baseline: EnergyScenario): ScenarioComparison {
+  const currentSummary = summarizeScenario(current);
+  const baselineSummary = summarizeScenario(baseline);
+
+  return {
+    monthlyKwhDelta: currentSummary.total.monthlyKwh - baselineSummary.total.monthlyKwh,
+    monthlyCostDelta: currentSummary.total.monthlyCost - baselineSummary.total.monthlyCost,
+  };
+}
+
+export function estimateOneHourSaving(watts: number, daysPerMonth: number, pricePerKwh: number): number {
+  return estimateDevice({ id: 'one-hour-saving', name: '', watts, dailyHours: 1 }, daysPerMonth, pricePerKwh).monthlyCost;
+}
+
 export function validateDevice(device: Pick<EnergyDevice, 'name' | 'watts' | 'dailyHours'>): string | null {
   if (!device.name.trim()) return '请填写设备名称';
   if (!Number.isFinite(device.watts) || device.watts < 0) return '功率不能为负数';

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { estimateDevice, summarizeScenario, validateDevice } from '../domain';
+import { compareScenarios, estimateDevice, estimateOneHourSaving, summarizeScenario, validateDevice } from '../domain';
 import type { EnergyScenario } from '../types';
 
 describe('energy domain', () => {
@@ -15,6 +15,31 @@ describe('energy domain', () => {
     const summary = summarizeScenario(scenario);
     expect(summary.total.monthlyKwh).toBe(12);
     expect(summary.devices.map((device) => device.share)).toEqual([0.25, 0.75]);
+  });
+
+  it('uses the scenario billing days for the one-hour saving', () => {
+    expect(estimateOneHourSaving(1000, 31, 0.5)).toBe(15.5);
+  });
+
+  it('compares usage and cost with each scenario\'s own days and price', () => {
+    const current: EnergyScenario = {
+      id: 'current',
+      name: 'current',
+      pricePerKwh: 0.5,
+      daysPerMonth: 31,
+      createdAt: '',
+      devices: [{ id: 'a', name: 'a', watts: 1000, dailyHours: 2 }],
+    };
+    const baseline: EnergyScenario = {
+      id: 'baseline',
+      name: 'baseline',
+      pricePerKwh: 1,
+      daysPerMonth: 30,
+      createdAt: '',
+      devices: [{ id: 'b', name: 'b', watts: 1000, dailyHours: 2 }],
+    };
+
+    expect(compareScenarios(current, baseline)).toEqual({ monthlyKwhDelta: 2, monthlyCostDelta: -29 });
   });
 
   it('rejects negative power and more than 24 hours', () => {
